@@ -1,0 +1,202 @@
+---
+title: "ANLY 512 - Problem Set 4"
+author: "Rodda Ouma & Alejandra Robles"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+subtitle: Visual Data Exploration Analysis
+---
+The hw was done by Alehandra and Rodda Ouma
+```{r setup,results='hide', include=FALSE, message=FALSE, warning=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+
+install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("lubridate")
+install.packages("readxl")
+
+
+library(ggplot2)
+library(lubridate)
+library(dplyr)
+library(expss)
+```
+
+
+## Overview on the dataset
+
+The analysis will explore the Baltimore Crime Dataset found on Kaggle (https://www.kaggle.com/sohier/crime-in-baltimore). We will go over the data manipulation and visualization to uncover some insights from the dataset.
+
+```{r crime}
+crime<-BPD_Part_1_Victim_Based_Crime_Data
+set.seed(123)
+
+write.excel <- function(crime1,row.names=FALSE,col.names=TRUE,...) {
+  write.table(crime1,"clipboard",sep="\t",row.names=row.names,col.names=col.names,...)
+}
+
+write.excel(crime1)
+
+crime1<-crime[sample(nrow(crime), 2000), ]
+str(crime1)
+```
+
+The data was uploaded and a random subset of 2000 samples filtered out. Categorical variables were then converted to factors. 
+```{r crime1}
+##converting all categorical variables to factors
+crime1$CrimeCode<-factor(crime1$CrimeCode)
+crime1$Description<-factor(crime1$Description)
+crime1$`Inside/Outside`<-factor(crime1$`Inside/Outside`)
+crime1$Premise<-factor(crime1$Premise)
+crime1$Weapon<-factor(crime1$Weapon)
+
+```
+Time variables were then extracted from the Time Date column to create new columns that had Time and Date variables separetley. Month and Day variables were then extracted from the Date variable. 
+```{r}
+
+##Extract and create new variables for month, date and year from datecolumn
+crime1$DateWeek<-week(crime1$CrimeDate)
+
+crime1$MoYr<-format(as.Date(crime1$CrimeDate),"%Y-%m")
+crime1$Yr<-format(as.Date(crime1$CrimeDate), "%Y")
+crime1$Month<-format(as.Date(crime1$CrimeDate), "%m")
+crime1$Week<-format(as.Date)
+
+
+##Formatted to add in Day and Hour
+crime1$Day<- strftime(crime1$CrimeDate,'%A')
+crime1$Hour<-format(as_datetime(crime1$CrimeTime),"%H")
+
+
+##Creating a new column that redefines description
+levels(crime1$Description)[levels(crime1$Description)=="ROBBERY - RESIDENCE"]<-"ROBBERY"
+levels(crime1$Description)[levels(crime1$Description)=="ROBBERY - CARJACKING"]<-"ROBBERY"
+levels(crime1$Description)[levels(crime1$Description)=="ROBBERY - STREET"]<-"ROBBERY"
+levels(crime1$Description)[levels(crime1$Description)=="ROBBERY - COMMERCIAL"]<-"ROBBERY"
+levels(crime1$Description)[levels(crime1$Description)=="COMMON ASSAULT"]<-"ASSAULT"
+levels(crime1$Description)[levels(crime1$Description)=="AGG. ASSAULT"]<-"ASSAULT"
+levels(crime1$Description)[levels(crime1$Description)=="ASSAULT BY THREAT"]<-"ASSAULT"
+levels(crime1$Description)[levels(crime1$Description)=="LARCENY FROM AUTO"]<-"LARCENY"
+
+##Creating a new column that redefines Insdie/Outside columns
+levels(crime1$`Inside/Outside`)[levels(crime1$`Inside/Outside`)=="I"]<-"Inside"
+levels(crime1$`Inside/Outside`)[levels(crime1$`Inside/Outside`)=="O"]<-"Outside"
+
+```
+We are able to now analyze the data.
+
+###Visualization 1
+The first visualization looks at the days broken down by the total of incidents that occur per day. The visulaization was chosen to address how many incidents occur per day. From the graph, we are able to point out that Tuesday, Thursday, and Sunday have the highest count of incidents. 
+
+```{r}
+crime2<-crime1
+crime2$Day<-na.omit(crime1$Day)
+str(crime2)
+
+summary(crime2$Day)
+fre(crime2$Day)
+fre(crime2$Hour)
+View(crime2)
+##start with basic plot with no y in order to show count
+
+p<-ggplot(crime2,aes(x=crime2$Day,y=crime2$`Total Incidents`,group=1))+geom_bar(stat="identity", fill="darkolivegreen4")+xlab("")+labs(title="Number of Incidents per Day",x="Day",y="Number of Incidents")+theme_classic()
+p
+
+```
+
+###Visualization 2
+The visualization below addresses the number of incidents that occur per month. As shown below, incidents are high during the months of May and August. The least number of incidents seem to occur during the months of Spetember, October and November. We could conclude that during the summer, the sun is out and people are out which could be why there is a higher number of incidents during these months.
+
+```{r}
+
+fre(crime1$Hour)
+str(crime1)
+
+crime1$Hour<-factor(crime1$Hour)
+
+
+ggplot(crime1,
+  aes(x=crime1$Month, y=crime1$`Total Incidents`))+ geom_bar( stat= "identity",fill="darkorange4")+
+  labs(title=" Number of incidents by Months",x="Month",y="Number of Incidents")+theme_classic()
+  
+```
+
+###Visualization 3
+The following visualization is to analyse the total of incidents over the years and see if we are able to point out if there is an increase, a decrease or if it remains the same throughout the years. As you can see there was a significant decrease over the years. The number of crimespeaked in 2015 before significantly reducing in 2017.
+
+```{r, echo=FALSE}
+str(crime1)
+fre(crime1$Yr)
+ggplot(crime1, aes(x=crime1$Yr,y=crime1$`Total Incidents`)) + geom_bar( fill="darkslategrey",stat="identity") + labs(title="Total of Incidents throughout the Years",x="Year",y="Total of Incidents")+theme_classic() 
+```
+
+
+###Visualization 4
+Next, we would like to look deeper into the incidents by year. On this visualization find the total of incidents throughout the years broken down to year by year and also the type of incidents broken down by year. The number of robbery incidents increased significantly in 2015 before reducing in 2017. Autotheft also reduced in 2017.
+
+```{r, echo=FALSE}
+
+ggplot(crime1, aes(x = crime1$Yr, y = crime1$`Total Incidents`, fill = Description, label = crime1$`Total Incidents`)) +
+  geom_bar(stat = "identity") +theme_classic()
+```
+
+###Visualization 5
+On the following graph we are going to be looking at the frequency of incidents by district. This visualization addresses which district has the highest number of incidents as well as which type of crimes are relevant in each district. As seen below, North Eastern district has the highest number of crimes cumulatively and 'Larceny' crimes seem to be the highest in all disctricts. The least type of crime in all districts is 'Shooting'.
+```{r}
+
+fre(crime1$District)
+fre(crime1$Description)
+
+theme_set(theme_classic())
+
+# Plot
+g <- ggplot(crime1, aes(crime1$District))
+g + geom_bar(aes(fill=crime1$Description), width = 0.5) + 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) +
+  labs(title="Description of Incidents by District ",x="District",y="Number of Incidents")+theme_classic()
+```
+
+###Visualization 6
+On the following graph we are able to analyze the frequency of incidents by the type of weapon. In other words, which weapon was utilized more. From our visualization we are able to determine that 'hands' has the highest number of incidents followed by firearm. However, most of the incidents do not have registered what type of weapon was utilized. 
+
+```{r, echo=FALSE}
+typeofweapon <- ggplot(data = crime1, aes(Weapon)) + geom_bar(aes(y= (..count..)), fill="sienna3") + labs(title= "Number of Incidents Related to the Type of Weapon", x= "Type of Weapon", y="Total of Incidents")+theme_classic()
+typeofweapon
+```
+
+###Visualizaion 7
+Looking deeper into the types of weapon. We would like to learn where these weapons were utilized; if inside or outside. As shown below, we learned that the weapons that were used more happened at different places (Outside vs Inside). Looking at the most frequently used weapons, we can say that incidents that involved 'hands' happened inside while incidents that involve a 'firearm' happened outside.
+```{r}
+
+crime3<-crime1
+
+##crime3<-!is.na(crime3$Inside.Outside)
+crime3V1<-subset(crime3,!is.na(crime3$Weapon))
+fre(crime3V1$Weapon)
+fre(crime3V1$`Inside/Outside`)
+
+crime3V2<-subset(crime3V1,!is.na(crime3V1$`Inside/Outside`))
+
+
+ggplot(data =crime3V2, aes(x = crime3V2$`Inside/Outside`, fill=crime3V2$Weapon))+
+  geom_bar(position = 'dodge') +
+  labs(title = "Number of incidents by Crime Weapon", x = "Inside or Outside", y = "Number", color = "Crime Weapon")+theme_classic()
+
+
+```
+###Visualization 8
+The visualization below shows the type of crime and where they do occur. As seen below, crimes involving Larcency , Robbery and autotheft most occured outside while the cirmes that involved Burglary occured inside which makes sense.
+```{r}
+
+fre(crime1$District)
+fre(crime1$Yr)
+ggplot(crime1, aes(x = reorder(crime1$Description, crime1$`Total Incidents`), y = crime1$`Total Incidents`, fill =crime1$`Inside/Outside`)) + 
+    geom_bar(stat = 'identity') + 
+    coord_flip() +
+    labs(x = '', y = 'Total Number of Crimes')+theme_classic()
+```
+
+
