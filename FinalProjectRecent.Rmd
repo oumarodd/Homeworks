@@ -1,0 +1,217 @@
+---
+title: Analysis on the mHealth App Data
+author: "Rodda Ouma, Jesus & Alejandra Robles"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(googlesheets)
+
+
+
+##Funciton to find the sheet
+gs_ls()
+
+##get the sheet and read it
+Blooddata<-gs_title("Systolic")
+Blooddata<-gs_read(Blooddata)
+View(Blooddata)
+
+summary(Blooddata)
+Blooddata$`First Week Value`<- as.numeric(as.character(Blooddata$`First Week Value`))
+Blooddata$`Last Week Value`<- as.numeric(as.character(Blooddata$`Last Week Value`))
+Blooddata$`Delta Blood Pressure` <- as.numeric(as.character(Blooddata$`Delta Blood Pressure`))
+Blooddata$Latitude <- as.numeric(as.character(Blooddata$Latitude))
+Blooddata$Longitude <- as.numeric(as.character(Blooddata$Longitude))
+Blooddata$Age <- as.numeric(as.character(Blooddata$Age))
+Blooddata$`Systolic First Week Stage` <- as.factor(as.character(Blooddata$`Systolic First Week Stage`))
+Blooddata$`Systolic Last Week Stage` <- as.factor(as.character(Blooddata$`Systolic Last Week Stage`))
+Blooddata$Location <- as.factor(as.character(Blooddata$Location))
+Blooddata$`Blood Pressure Change`<- as.factor(as.character(Blooddata$`Blood Pressure Change`))
+Blooddata$`Level of Engagement`<- as.factor(as.character(Blooddata$`Level of Engagement`))
+Blooddata$Gender<- as.factor(as.character(Blooddata$Gender))
+Blooddata$`Count of Readings Percent`<- as.numeric(as.character(Blooddata$`Count of Readings Percent`))
+Blooddata$`Percent Delta Pressure Change`<- as.numeric(as.character(Blooddata$`Percent Delta Pressure Change`))
+
+
+```
+
+## Introduction
+Patient advocates, policymakers and healthcare leaders are increasing involvement of patients into the changing healthcare landscape (The National Academies Press, 2014). Optimal execution strategies, however, remain elusive. Patient engagement is a concept that combines patients' knowledge, skills, and motivation with interventions designed to promote positive patient behaviors. Patient engagement has gained wide popularity as a strategy to achieve the elusive "triple aim" of improved outcomes, better care, and lower costs (Health Aff, 2013). The Institute of Medicine has defined patient engagement as a fundamental precursor to high-quality care, lower costs, and better health (The National Academies Press, 2014). The evidence supporting the use of patient engagement techniques to improve satisfaction and outcomes is robust (Hibbard JH, Greene J; 2013). Likewise, some evidence suggest that patients more involved in their care incur fewer costs overall (Hibbard, Greene & Overton; 2013) The Centers for Medicare and Medicaid Services' (CMS) electronic health record (EHR) incentive program ["Meaningful Use"] promotes the use of health information technology to encourage patients to better understand and participate in their care (CMS, 2015).
+
+Mobile health technology (mHealth) represents an important mechanism by which patients can play a larger role in managing their chronic conditions. mHealth is associated with enhanced communication between patient and provider and may improve self-management behaviors (Jolles, Clark, Braam & Logan; 2013). There has been immense enthusiasm surrounding mHealth over the past decade, particularly with respect to supporting self-management of chronic conditions (de Jongh, Gurol-Urganci, Vodopivec-Jamsek; 2012) Yet, optimal employment strategies and disease states in which mHealth may be most impactful are unknown.
+
+Hypertension is a prevalent chronic condition that may represent an ideal target for mHealth patient engagement interventions. Uncontrolled hypertension may result in end organ damage and confers increasing risk of neurovascular and cardiovascular events over time [9]. Effective blood pressure control mitigates these risks but requires diligent patient compliance and involvement in management. mHealth engagement strategies may help support patients in compliance and self-managing their treatment (Eckel, Jakicic, Ard; 2013)
+
+In this project we will explore the improvement of patient's health using a mobile app to track their Blood Pressure(BP). We will analyze 5,000 users that tracked and had more than 2 entries of Blood Pressure(BP) readings through a mobile app. We will slice the data in subgroups depending on age, level of engagement and other demographic values and get some underlying insights from there.
+
+##Data and Methods
+Hello Heart is a mHealth technology launched in April, 2015. The application provides a mobile platform through which patients can record and track self-measured BP recordings over time. Other features include periodic reminders to measure BP, interactive educational modules to improve use knowledge base, and connectivity for wireless BP measurement devices. Hello Heart was designed to maximize user engagement by incorporating mHealth best practices: ease of use, straightforward comprehension, and clarity. Screens, features and user interface were optimized toward maximal patient engagement.
+
+Subjects in this study self-enrolled online. As part of the application's terms of service subjects consented to data analysis. Only subjects that recorded ???2 BP measurements (n = 4,635) were included in the study as a minimum two-point trend was necessary for effect analysis. Demographic data were self-reported when subjects initially downloaded the application and included age, gender, geographic location, comorbid conditions, and medications.
+
+The cohort was divided into subgroups based on the number of weeks passed since application download that subjects were still recording measurements. Subjects recording BP for less than 4 weeks were considered "low engagement", 4-8 weeks "medium engagement," and longer than 8 weeks "high engagement." 
+
+
+
+
+##Data Cleaning and Merging
+
+Dataset was merged with another dataset that provided State information. Longitudinal and latitudinal information of each state was then retrieved and merged with the original dataset to create a comprehensive dataset.
+
+The datset was then cleaned by removing outliers and NAs while creating the graphs.
+
+
+## Analysis
+
+
+Users from all over the United States were part of the program. Users that recorded the highest number of readings were based in Florida, Arizona and Virginia (See figure 1 and figure 2)
+
+```{r}
+
+library(dplyr)
+library(sp)
+library(maptools)
+library(rgdal)
+library(ggplot2)
+library(leaflet)
+library(RgoogleMaps)
+library(ggmap)
+
+f<-Blooddata[!is.na(Blooddata$Longitude),]
+
+
+d<-leaflet(f)%>% 
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addProviderTiles(providers$Stamen.TonerLines,
+                   options = providerTileOptions(opacity = 0.50)) %>%
+  addCircles(lng = ~f$Longitude, lat = ~f$Latitude, weight=3, radius =40, fillOpacity=30)
+
+d
+```
+
+
+```{r}
+
+
+theme_set(theme_bw())
+
+p<-ggplot(data=f, aes(x=f$Location, y=f$`Count of Readings`))+ 
+  geom_bar(stat="identity", width=.5, fill="tomato3") + 
+  labs( 
+      title="Location Vs. Count- of Readings")+theme(axis.text.x = element_text(angle=65, vjust=0.6))
+  
+
+p
+```
+
+Men participated more than women in recording their BP pressure and in that sense had more number of counts as well as sum.
+```{r}
+
+
+theme_set(theme_bw())
+
+z<-Blooddata[!is.na(Blooddata$Gender),]
+
+
+m<-ggplot(z, aes(x=z$Gender, y=z$`Count of Readings`))+
+  geom_bar(stat="identity", width=.5, fill="tomato3")+labs(
+       title="Gender Vs. Count- of Readings")+theme(axis.text.x = element_text(angle=65, vjust=0.6))
+  
+ 
+  
+
+m
+```
+
+There is a wide range in the ages with the median age being 48, mean age at 47 while the maximum age recorded at 71. Further breaking down into gender as seen in the box plot below, the means of the two genders were almost the same at around 47. The boxplot on the men's side seems bigger due as they had more range in their ages compared to females.
+```{r}
+rr<-z[!is.na(z$Age),]
+
+summary(z$Age)
+
+
+
+q<-ggplot(rr, aes(x=as.factor(rr$Gender), y=rr$Age)) + 
+  geom_boxplot(fill="slateblue", alpha=0.2) + 
+  xlab("cyl")
+q
+
+```
+
+
+
+
+
+Most users did see a decrease in their blood pressure between the first reading and the last reading. The first reading was mostly taken within the first two weeks of sign up and the last reading was the last measure recorded within 52 weeks since activation. Reduction was defined as a changed of at least 1 mmHg systolic blood pressure from the first week average and the last week average into the program.Almost 50% of users did see a reduction in their blood pressure.
+```{r}
+
+
+theme_set(theme_bw())
+newff<-Blooddata[!is.na(Blooddata$`Last Week Value`),]
+
+
+r<-ggplot(newff, aes(x=factor(1), fill=newff$`Blood Pressure Change`))+
+  geom_bar(width = 1)+
+  coord_polar("y")+labs(title="Breakdown of Blood Pressure Change")+theme(axis.text.x = element_text(angle=65, vjust=0.6))
+  
+r
+```
+
+Further exploring Gender and comparing their performance, we note a higher count in blood pressure reduction among males than females. Interestingly,females did have a higher count of blood pressure increase instances than men
+
+```{r}
+
+
+theme_set(theme_bw())
+
+newdd<-newff[!is.na(newff$Gender),]
+
+d<- ggplot(newdd, aes(fill=newdd$`Blood Pressure Change`, y=newdd$ID2,x=newdd$Gender)) + geom_bar(position="fill", stat="identity")+labs(title="Blood Pressure Change by Gender")+theme(axis.text.x = element_text(angle=65, vjust=0.6))
+  
+
+d
+```
+
+
+
+Exploring the engagement levels, we realise that users who engaged more with the App noted a reduction in their blood pressure since they were now able to take active measures towards reducing it. Conversly, most users who did not use the app reported no change in their blood pressure levels between the first and last reading within the 52 weeks. 
+```{r}
+
+
+theme_set(theme_bw())
+
+g<-Blooddata[!is.na(Blooddata$`Blood Pressure Change`),]
+
+e<- ggplot(g, aes(fill=g$`Blood Pressure Change`, y=g$ID2, x=g$`Level of Engagement`)) + 
+  geom_bar(position="fill", stat="identity")+ coord_flip()+labs(title="Blood Pressure Change by Level of Engagement")+theme(axis.text.x = element_text(angle=65, vjust=0.6))
+  
+
+e
+```
+
+
+##Conclusion
+Adaptation of health apps has been vital in understanding human behavior and as seen from the data, technology can now be used to influence human behavior and help improve human health.
+
+
+
+
+##References
+
+1. Matter Front. Partnering with patients to drive shared decisions, better value, and care improvement: workshop proceedings. Washington, DC: The National Academies Press; 2014. 
+2. Health policy brief. Patient engagement. Health Aff (Millwood). February 2013.
+3. Hibbard JH, Greene J. What the evidence shows about patient activation: better health outcomes and care experiences. Fewer data on costs. Health Aff. 2013;32:207-214. doi: 10.1377/hlthaff.2012.1061. 
+4. Hibbard JH, Greene J, Overton V. Patients with lower activation associated with higher costs; delivery systems should know their patients' 'scores' Health Aff (Millwood) 2013;32:216-222. doi: 10.1377/hlthaff.2012.1064. 
+5. CMS. Medicare and medicaid programs; Electronic health record incentive program-stage 2, 2012. https://www.cms.gov/Regulations-and-Guidance/Legislation/EHRIncentivePrograms/Stage_2.html. Accessed 30 Aug 2015.
+6. Jolles EP, Clark AM, Braam B. Getting the message across: opportunities and obstacles in effective communication in hypertension care. J Hypertens. 2013;30:1500-1510. doi: 10.1097/HJH.0b013e32835476e1. 
+7. Logan AG. Transforming hypertension management using mobile health technology for telemonitoring and self-care support. Can J Cardiol. 2013;29:579-585. doi: 10.1016/j.cjca.2013.02.024. 
+8. de Jongh T, Gurol-Urganci I, Vodopivec-Jamsek V, et al. Mobile phone messaging for facilitating self-management of long-term illnesses. Database Syst Rev. 2012;12:CD007459. 
+9. Chobanian AV, Bakris GL, Black HR, et al. Seventh report of the Joint National Committee on Prevention, Detection, Evaluation, and Treatment of High Blood Pressure. Hypertension. 2003;42:1206-1252. doi: 10.1161/01.HYP.0000107251.49515.c2.
+10. Eckel RH, Jakicic JM, Ard JD, et al. 2013 AHA/ACC guideline on lifestyle management to reduce cardiovascular risk: a report of the American College of Cardiology/American Heart Association Task Force on Practice Guidelines. Circulation. 2014;129(25 Suppl 2):S76-S99. doi: 10.1161/01.cir.0000437740.48606.d1.
+

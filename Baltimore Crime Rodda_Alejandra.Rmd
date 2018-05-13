@@ -7,7 +7,7 @@ output:
   html_document: default
 subtitle: Visual Data Exploration Analysis
 ---
-The hw was done by Alehandra and Rodda Ouma
+The hw was done by Alehandra and Rodda Ouma. Today is the ninth of May.
 ```{r setup,results='hide', include=FALSE, message=FALSE, warning=FALSE}
 
 knitr::opts_chunk$set(echo = TRUE)
